@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String?
+  createdAt    DateTime      @default(now())
+  profile      Profile?
+  resumes      Resume[]
+  chatSessions ChatSession[]
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  firstName String?
+  lastName  String?
+  photoUrl  String?
+  phone     String?
+  address   String?
+  birthYear Int?
+  gender    String?
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ChatSession {
+  id        String        @id @default(cuid())
+  userId    String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime    @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+}
+
+model Resume {
+  id         String    @id @default(cuid())
+  userId     String
+  templateId String
+  title      String
+  locale     String    @default("de")
+  isPublic   Boolean   @default(false)
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id])
+  template   Template  @relation(fields: [templateId], references: [id])
+  sections   Section[]
+}
+
+model Section {
+  id       String @id @default(cuid())
+  resumeId String
+  type     String
+  order    Int
+  content  Json
+  resume   Resume @relation(fields: [resumeId], references: [id])
+}
+
+model Template {
+  id         String   @id @default(cuid())
+  name       String
+  previewUrl String?
+  isPremium  Boolean  @default(false)
+  resumes    Resume[]
+}
