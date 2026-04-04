@@ -1,0 +1,15 @@
+{
+  "auth": {
+    "signIn": "Sign in",
+    "signInWithGoogle": "Sign in with Google",
+    "signOut": "Sign out"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome"
+  },
+  "home": {
+    "title": "Smart CV Builder",
+    "subtitle": "Create your professional resume with AI"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "auth": {
+    "signIn": "Увійти",
+    "signInWithGoogle": "Увійти через Google",
+    "signOut": "Вийти"
+  },
+  "dashboard": {
+    "title": "Дашборд",
+    "welcome": "Ласкаво просимо"
+  },
+  "home": {
+    "title": "Smart CV Builder",
+    "subtitle": "Створіть своє професійне резюме за допомогою ШІ"
+  }
+}

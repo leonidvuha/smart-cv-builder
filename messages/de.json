@@ -1,0 +1,15 @@
+{
+  "auth": {
+    "signIn": "Anmelden",
+    "signInWithGoogle": "Mit Google anmelden",
+    "signOut": "Abmelden"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Willkommen"
+  },
+  "home": {
+    "title": "Smart CV Builder",
+    "subtitle": "Erstellen Sie Ihren professionellen Lebenslauf mit KI"
+  }
+}

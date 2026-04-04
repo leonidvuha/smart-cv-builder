@@ -1,25 +1,28 @@
+import createMiddleware from "next-intl/middleware";
+import { routing } from "@/i18n/routing";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
+const intlMiddleware = createMiddleware(routing);
 const { auth } = NextAuth(authConfig);
 
-export const proxy = auth((req) => {
-  const isLoggedIn = !!req.auth;
-  const isAuthPage = req.nextUrl.pathname.startsWith("/auth");
-  const isProtected = req.nextUrl.pathname.startsWith("/dashboard");
+export const proxy = async (req: NextRequest) => {
+  const isProtected = req.nextUrl.pathname.match(/^\/(de|en|uk)\/dashboard/);
 
-  if (isProtected && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/auth/signin", req.url));
+  if (isProtected) {
+    return auth((authReq) => {
+      if (!authReq.auth) {
+        const locale = req.nextUrl.pathname.split("/")[1];
+        return Response.redirect(new URL(`/${locale}/auth/signin`, req.url));
+      }
+      return intlMiddleware(req);
+    })(req, {} as never);
   }
 
-  if (isAuthPage && isLoggedIn) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  return NextResponse.next();
-});
+  return intlMiddleware(req);
+};
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/auth/:path*"],
+  matcher: ["/(de|en|uk)/:path*", "/((?!api|_next|_vercel|.*\\..*).*)"],
 };
