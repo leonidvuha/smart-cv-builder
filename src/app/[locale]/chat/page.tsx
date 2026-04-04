@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 type Message = {
   role: "user" | "assistant";
@@ -8,6 +9,10 @@ type Message = {
 };
 
 export default function ChatPage() {
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get("template") || "template-1";
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -18,6 +23,20 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Create chat session on mount
+  useEffect(() => {
+    const createSession = async () => {
+      const res = await fetch("/api/chat/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      setSessionId(data.sessionId);
+    };
+    createSession();
+  }, [templateId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,10 +55,9 @@ export default function ChatPage() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, sessionId }),
       });
 
-      // Read streaming response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let aiContent = "";
@@ -69,6 +87,7 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Resume Assistant</h1>
+      <p className="text-sm text-gray-400 mb-4">Template: {templateId}</p>
 
       <div className="flex-1 overflow-y-auto space-y-4 mb-4">
         {messages.map((msg, i) => (
