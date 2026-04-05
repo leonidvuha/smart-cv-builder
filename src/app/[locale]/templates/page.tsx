@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function TemplatesPage() {
   const session = await auth();
@@ -27,9 +28,12 @@ export default async function TemplatesPage() {
             <p className="text-gray-400 text-sm mt-1">
               {template.isPremium ? "Premium" : "Free"}
             </p>
-            <button className="mt-4 w-full bg-white text-black py-2 rounded-lg font-medium hover:bg-gray-100">
+            <Link
+              href={`/chat?template=${template.id}`}
+              className="mt-4 w-full bg-white text-black py-2 rounded-lg font-medium hover:bg-gray-100 block text-center"
+            >
               Use this template
-            </button>
+            </Link>
           </div>
         ))}
       </div>
