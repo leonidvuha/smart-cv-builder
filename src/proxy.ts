@@ -8,7 +8,7 @@ const intlMiddleware = createMiddleware(routing);
 const { auth } = NextAuth(authConfig);
 
 export const proxy = async (req: NextRequest) => {
-  const isProtected = req.nextUrl.pathname.match(/^\/(de|en|uk)\/dashboard/);
+  const isProtected = req.nextUrl.pathname.match(/^\/(de|en|uk)\/(dashboard|chat|templates)/);
 
   if (isProtected) {
     return auth((authReq) => {
