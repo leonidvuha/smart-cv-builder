@@ -1,93 +1,320 @@
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/routing";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Sparkles, Globe, Download } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Send, Upload, User, CheckCircle } from "lucide-react";
+import Image from "next/image";
 
-export default function HomePage() {
-  const t = useTranslations("home");
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export default function ChatPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const templateId = searchParams.get("template") || "template-1";
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Hello! I'm your resume assistant. Let's start building your professional resume. Could you tell me your birth year and gender?",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Manual form state
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Create chat session on mount
+  useEffect(() => {
+    const createSession = async () => {
+      const res = await fetch("/api/chat/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      setSessionId(data.sessionId);
+    };
+    createSession();
+  }, [templateId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = { role: "user", content: input };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages, sessionId }),
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = "";
+
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        aiContent += decoder.decode(value);
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: aiContent,
+          };
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhoto(file);
+    const url = URL.createObjectURL(file);
+    setPhotoPreview(url);
+  };
+
+  const handleCreate = async () => {
+    if (!sessionId) return;
+    setIsCreating(true);
+    try {
+      const formData = new FormData();
+      formData.append("sessionId", sessionId);
+      formData.append("templateId", templateId);
+      formData.append("firstName", firstName);
+      formData.append("lastName", lastName);
+      formData.append("address", address);
+      formData.append("phone", phone);
+      formData.append("chatMessages", JSON.stringify(messages));
+      if (photo) formData.append("photo", photo);
+
+      const res = await fetch("/api/resume/create", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        router.push("/dashboard?created=true");
+      }
+    } catch (error) {
+      console.error("Create error:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
-    <main className="flex flex-col items-center">
-      {/* Hero Section */}
-      <section className="w-full max-w-5xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-6">
-        <Badge variant="secondary" className="gap-1.5">
-          <Sparkles className="w-3.5 h-3.5" />
-          AI-powered Resume Builder
-        </Badge>
-
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight max-w-3xl">
-          {t("title")}
-        </h1>
-
-        <p className="text-xl text-muted-foreground max-w-xl">
-          {t("subtitle")}
-        </p>
-
-        <div className="flex gap-3 mt-2">
-          <Button asChild size="lg">
-            <Link href="/templates">Get started</Link>
-          </Button>
-          <Button variant="outline" size="lg" asChild>
-            <Link href="/auth/signin">Sign in</Link>
-          </Button>
+    <div className="h-[calc(100vh-64px)] flex gap-0">
+      {/* LEFT — Chat */}
+      <div className="flex-1 flex flex-col border-r border-border">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+          <h1 className="font-semibold text-lg">Resume Assistant</h1>
+          <Badge variant="secondary">{templateId}</Badge>
         </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="w-full bg-muted/40 py-20">
-        <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Everything you need
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-background rounded-xl p-6 border border-border flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary" />
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "bg-muted text-foreground rounded-bl-sm"
+                }`}
+              >
+                {msg.content}
               </div>
-              <h3 className="font-semibold text-lg">AI Chat</h3>
-              <p className="text-muted-foreground text-sm">
-                Our AI collects your experience through a friendly conversation
-                and suggests relevant skills.
-              </p>
             </div>
-
-            <div className="bg-background rounded-xl p-6 border border-border flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-primary" />
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-muted text-muted-foreground px-4 py-3 rounded-2xl rounded-bl-sm text-sm">
+                <span className="animate-pulse">Typing...</span>
               </div>
-              <h3 className="font-semibold text-lg">German & International</h3>
-              <p className="text-muted-foreground text-sm">
-                Generate a Lebenslauf for the German market or an international
-                CV in English.
-              </p>
             </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
 
-            <div className="bg-background rounded-xl p-6 border border-border flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Download className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-lg">PDF Export</h3>
-              <p className="text-muted-foreground text-sm">
-                Download your resume as a professional PDF ready to send to
-                employers.
-              </p>
+        {/* Input */}
+        <div className="px-6 py-4 border-t border-border">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Type your message..."
+              className="flex-1 bg-muted text-foreground rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={isLoading}
+              size="sm"
+              className="rounded-xl px-4"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — Manual Form */}
+      <div className="w-80 flex flex-col border-l border-border">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="font-semibold text-lg">Your Details</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            All fields are optional
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* Photo upload */}
+          <div className="flex flex-col items-center gap-3">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-20 h-20 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden"
+            >
+              {photoPreview ? (
+                <Image
+                  src={photoPreview}
+                  alt="Photo"
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8 text-muted-foreground" />
+              )}
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Upload className="w-3 h-3" />
+              Upload photo
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+          </div>
+
+          <Separator />
+
+          {/* Form fields */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">
+                First name
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">
+                Last name
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Doe"
+                className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">
+                Address
+              </label>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Berlin, Germany"
+                className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">
+                Phone
+              </label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+49 123 456 789"
+                className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+              />
             </div>
           </div>
         </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="w-full max-w-5xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-6">
-        <FileText className="w-12 h-12 text-primary" />
-        <h2 className="text-3xl font-bold">Ready to build your resume?</h2>
-        <p className="text-muted-foreground max-w-md">
-          Choose a template and let our AI guide you through the process.
-        </p>
-        <Button asChild size="lg">
-          <Link href="/templates">Choose a template</Link>
-        </Button>
-      </section>
-    </main>
+        {/* Create button */}
+        <div className="px-6 py-4 border-t border-border">
+          <Button
+            onClick={handleCreate}
+            disabled={isCreating}
+            className="w-full gap-2"
+          >
+            {isCreating ? (
+              <span className="animate-pulse">Creating...</span>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Create Resume
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
