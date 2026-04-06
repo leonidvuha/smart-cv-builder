@@ -2,11 +2,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ClassicTemplate } from "@/components/pdf/ClassicTemplate";
+import type { ResumeData } from "@/components/pdf/ClassicTemplate";
 import React from "react";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
   if (!session?.user?.email) {
@@ -28,27 +29,31 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  const personalSection = resume.sections.find((s) => s.type === "personal");
-  const aiSection = resume.sections.find((s) => s.type === "ai_summary");
+  // Helper: find section content by type
+  function getSection<T>(type: string, fallback: T): T {
+    const section = resume!.sections.find((s) => s.type === type);
+    return section ? (section.content as T) : fallback;
+  }
 
-  const personal = (personalSection?.content as Record<string, string>) ?? {};
-  const aiText = (aiSection?.content as { text: string })?.text ?? "";
-
-  const data = {
-    firstName: personal.firstName || "John",
-    lastName: personal.lastName || "Doe",
-    address: personal.address || "",
-    phone: personal.phone || "",
+  const data: ResumeData = {
     email: resume.user.email,
-    aiSummary: aiText,
+    personal: getSection("personal", {
+      firstName: "John",
+      lastName: "Doe",
+      address: "",
+      phone: "",
+    }),
+    summary: getSection("summary", { text: null }),
+    experience: getSection("experience", { items: [] }),
+    education: getSection("education", { items: [] }),
+    skills: getSection("skills", { items: [] }),
   };
 
   // @ts-ignore — react-pdf has incompatible types with React
   const buffer = await renderToBuffer(
-    React.createElement(ClassicTemplate as any, { data })
+    React.createElement(ClassicTemplate as any, { data }),
   );
 
-  // Convert Buffer to Uint8Array for Response
   const uint8 = new Uint8Array(buffer);
 
   return new Response(uint8, {

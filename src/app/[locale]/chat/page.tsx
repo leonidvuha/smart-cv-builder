@@ -23,7 +23,7 @@ export default function ChatPage() {
     {
       role: "assistant",
       content:
-        "Hello! I'm your resume assistant. Let's start building your professional resume. Could you tell me your birth year and gender?",
+        "Hi! I'm your resume assistant. Let's build your professional resume together. Where did you work most recently — what was the company and your position?",
     },
   ]);
   const [input, setInput] = useState("");

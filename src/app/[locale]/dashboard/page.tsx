@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Plus, Download, User } from "lucide-react";
+import { FileText, Plus, User } from "lucide-react";
+import { ResumeCard } from "@/components/ResumeCard";
 
 export default async function DashboardPage({
   searchParams,
@@ -115,30 +116,7 @@ export default async function DashboardPage({
           ) : (
             <div className="flex flex-col gap-3">
               {resumes.map((resume) => (
-                <div
-                  key={resume.id}
-                  className="bg-card border border-border rounded-2xl p-5 flex items-center justify-between hover:border-primary/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{resume.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {resume.template.name} •{" "}
-                        {new Date(resume.updatedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button variant="outline" size="sm" className="gap-2" asChild>
-                    <Link href={`/api/resume/${resume.id}/pdf`} target="_blank">
-                      <Download className="w-3.5 h-3.5" />
-                      PDF
-                    </Link>
-                  </Button>
-                </div>
+                <ResumeCard key={resume.id} resume={resume} />
               ))}
             </div>
           )}
