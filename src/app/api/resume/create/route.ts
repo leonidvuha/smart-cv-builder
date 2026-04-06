@@ -1,106 +1,113 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
+import type { RawContent, LocalizedContent } from "@/types/resume";
 
-const openai = new OpenAI();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const EXTRACTION_PROMPT = `You are a resume data extractor. Based on the conversation history, extract the candidate's information and return ONLY a valid JSON object. No markdown, no explanations, just raw JSON.
+// ---------------------------------------------------------------------------
+// Prompt: instructs OpenAI to return a bilingual resume JSON (EN + DE)
+// ---------------------------------------------------------------------------
+const BILINGUAL_EXTRACTION_PROMPT = `You are a professional resume builder. You will receive raw user data (form fields + chat conversation). Your job is to:
 
-Text fields that appear in the resume (summary, position, responsibilities, degree, field) must be bilingual objects with "de" and "en" keys.
-Names, companies, institutions, dates, phone, address, skills — stay as plain strings.
+1. Analyze all provided information.
+2. Structure it into a complete, professional resume.
+3. Return the result in TWO languages: English ("en") and German ("de").
 
-Required format:
+CRITICAL RULES:
+- Return ONLY valid JSON. No markdown, no explanations, no extra text.
+- The JSON must have exactly two root keys: "en" and "de".
+- Each key contains a full resume object with the EXACT structure shown below.
+- Do NOT use Cyrillic characters anywhere — every string must use Latin characters only.
+- Personal names must be transliterated to Latin if originally in Cyrillic.
+- Company and institution names in Cyrillic must be translated or transliterated.
+- Dates (startDate, endDate) must stay as-is, do not translate them.
+- If a field is unknown or not provided, use null for text or [] for arrays.
+- Write professional, polished text — improve phrasing where appropriate.
+- Summary should be 2-3 sentences highlighting key qualifications.
+- Responsibilities should be concise bullet-point style text.
+
+Required JSON structure:
 {
-  "summary": {
-    "de": "Kurze professionelle Zusammenfassung auf Deutsch (2-3 Sätze)",
-    "en": "Short professional summary in English (2-3 sentences)"
+  "en": {
+    "personal": {
+      "firstName": "string",
+      "lastName": "string",
+      "phone": "string",
+      "address": "string"
+    },
+    "summary": {
+      "text": "string or null"
+    },
+    "experience": {
+      "items": [
+        {
+          "company": "string",
+          "position": "string",
+          "startDate": "YYYY-MM",
+          "endDate": "YYYY-MM or null if current",
+          "responsibilities": "string"
+        }
+      ]
+    },
+    "education": {
+      "items": [
+        {
+          "institution": "string",
+          "degree": "string",
+          "field": "string",
+          "startDate": "YYYY",
+          "endDate": "YYYY"
+        }
+      ]
+    },
+    "skills": {
+      "items": ["string"]
+    }
   },
-  "experience": [
-    {
-      "company": "company name",
-      "position": {
-        "de": "Berufsbezeichnung auf Deutsch",
-        "en": "Job title in English"
-      },
-      "startDate": "YYYY-MM",
-      "endDate": "YYYY-MM or null if current",
-      "responsibilities": {
-        "de": "Aufgaben und Erfolge auf Deutsch",
-        "en": "Responsibilities and achievements in English"
-      }
-    }
-  ],
-  "education": [
-    {
-      "institution": "school or university name",
-      "degree": {
-        "de": "Abschluss auf Deutsch",
-        "en": "Degree in English"
-      },
-      "field": {
-        "de": "Studienrichtung auf Deutsch",
-        "en": "Field of study in English"
-      },
-      "startDate": "YYYY",
-      "endDate": "YYYY"
-    }
-  ],
-  "skills": ["skill1", "skill2"]
-}
+  "de": {
+    "personal": { "...same structure, translated to German..." },
+    "summary": { "...translated..." },
+    "experience": { "...translated..." },
+    "education": { "...translated..." },
+    "skills": { "...skills stay the same (technical terms)..." }
+  }
+}`;
 
-If a field is unknown, use null for objects or [] for arrays. Always return valid JSON.`;
-
+// ---------------------------------------------------------------------------
+// POST /api/resume/create
+// Accepts raw user data, sends to OpenAI, saves bilingual result to DB.
+// ---------------------------------------------------------------------------
 export async function POST(req: Request) {
+  // --- Auth check ---
   const session = await auth();
   if (!session?.user?.email) {
-    return new Response("Unauthorized", { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formData = await req.formData();
-  const templateId = formData.get("templateId") as string;
-  const firstName = (formData.get("firstName") as string) || "John";
-  const lastName = (formData.get("lastName") as string) || "Doe";
-  const address = (formData.get("address") as string) || "";
-  const phone = (formData.get("phone") as string) || "";
-  const chatMessagesRaw = formData.get("chatMessages") as string;
-  const chatMessages: { role: string; content: string }[] = JSON.parse(
-    chatMessagesRaw || "[]",
-  );
-
-  // --- Step 1: Final OpenAI call to extract structured JSON ---
-  let extractedData = {
-    summary: null as string | null,
-    experience: [] as object[],
-    education: [] as object[],
-    skills: [] as string[],
+  // --- Parse request body ---
+  let body: {
+    rawContent: RawContent;
+    chatSessionId?: string;
+    photoUrl?: string;
   };
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0,
-      messages: [
-        { role: "system", content: EXTRACTION_PROMPT },
-        ...chatMessages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-        {
-          role: "user",
-          content:
-            "Now extract all the resume data from our conversation and return the JSON.",
-        },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? "{}";
-    extractedData = JSON.parse(raw);
-  } catch (err) {
-    console.error("OpenAI extraction failed:", err);
-    // Continue with empty data — resume still gets created
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // --- Step 2: Upsert user and profile ---
+  const { rawContent, chatSessionId, photoUrl } = body;
+
+  if (!rawContent?.form?.firstName || !rawContent?.form?.lastName) {
+    return Response.json(
+      { error: "firstName and lastName are required" },
+      { status: 400 },
+    );
+  }
+
+  // --- Ensure user exists ---
   const user = await prisma.user.upsert({
     where: { email: session.user.email },
     update: {},
@@ -110,50 +117,95 @@ export async function POST(req: Request) {
     },
   });
 
+  // --- Update profile with form data ---
   await prisma.profile.upsert({
     where: { userId: user.id },
-    update: { firstName, lastName, address, phone },
-    create: { userId: user.id, firstName, lastName, address, phone },
-  });
-
-  // --- Step 3: Save resume with structured sections ---
-  const resume = await prisma.resume.create({
-    data: {
+    update: {
+      firstName: rawContent.form.firstName,
+      lastName: rawContent.form.lastName,
+      phone: rawContent.form.phone,
+    },
+    create: {
       userId: user.id,
-      templateId,
-      title: `${firstName} ${lastName} — Resume`,
-      locale: "de",
-      sections: {
-        create: [
-          {
-            type: "personal",
-            order: 0,
-            content: { firstName, lastName, address, phone },
-          },
-          {
-            type: "summary",
-            order: 1,
-            content: { text: extractedData.summary },
-          },
-          {
-            type: "experience",
-            order: 2,
-            content: { items: extractedData.experience },
-          },
-          {
-            type: "education",
-            order: 3,
-            content: { items: extractedData.education },
-          },
-          {
-            type: "skills",
-            order: 4,
-            content: { items: extractedData.skills },
-          },
-        ],
-      },
+      firstName: rawContent.form.firstName,
+      lastName: rawContent.form.lastName,
+      phone: rawContent.form.phone,
     },
   });
 
-  return Response.json({ resumeId: resume.id });
+  // --- Create resume with "processing" status ---
+  const title = `${rawContent.form.firstName} ${rawContent.form.lastName} — Resume`;
+
+  const resume = await prisma.resume.create({
+    data: {
+      userId: user.id,
+      chatSessionId: chatSessionId || null,
+      title,
+      photoUrl: photoUrl || null,
+      status: "processing",
+      rawContent: rawContent as object,
+    },
+  });
+
+  // --- Call OpenAI to get bilingual structured data ---
+  try {
+    const userDataMessage = [
+      `Form data:`,
+      `- Name: ${rawContent.form.firstName} ${rawContent.form.lastName}`,
+      `- Phone: ${rawContent.form.phone}`,
+      `- Email: ${rawContent.form.email}`,
+      ``,
+      `Chat conversation (user's free-form input):`,
+      rawContent.chatText,
+    ].join("\n");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: BILINGUAL_EXTRACTION_PROMPT },
+        { role: "user", content: userDataMessage },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const parsed = JSON.parse(raw) as LocalizedContent;
+
+    // --- Validate that both locales are present ---
+    if (!parsed.en || !parsed.de) {
+      throw new Error("OpenAI response missing 'en' or 'de' key");
+    }
+
+    // --- Success: save localized content, set status "ready" ---
+    const updated = await prisma.resume.update({
+      where: { id: resume.id },
+      data: {
+        localizedContent: parsed as object,
+        status: "ready",
+      },
+    });
+
+    return Response.json({
+      resumeId: updated.id,
+      status: updated.status,
+    });
+  } catch (err) {
+    // --- OpenAI or parsing failed: mark as "error" ---
+    console.error(`[resume/create] OpenAI failed for resume ${resume.id}:`, err);
+
+    await prisma.resume.update({
+      where: { id: resume.id },
+      data: { status: "error" },
+    });
+
+    return Response.json(
+      {
+        resumeId: resume.id,
+        status: "error",
+        error: err instanceof Error ? err.message : "AI processing failed",
+      },
+      { status: 502 },
+    );
+  }
 }

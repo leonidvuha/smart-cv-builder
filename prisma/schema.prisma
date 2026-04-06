@@ -17,8 +17,8 @@ model User {
 }
 
 model Profile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
+  id        String  @id @default(cuid())
+  userId    String  @unique
   firstName String?
   lastName  String?
   photoUrl  String?
@@ -26,53 +26,51 @@ model Profile {
   address   String?
   birthYear Int?
   gender    String?
-  user      User     @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
 }
 
 model ChatSession {
-  id         String        @id @default(cuid())
-  userId     String
-  templateId String        @default("template-1")
-  createdAt  DateTime      @default(now())
-  user       User          @relation(fields: [userId], references: [id])
-  messages   ChatMessage[]
+  id        String        @id @default(cuid())
+  userId    String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  messages  ChatMessage[]
+  resume    Resume?       // One chat session produces one resume
 }
 
 model ChatMessage {
   id        String      @id @default(cuid())
   sessionId String
-  role      String
+  role      String      // "user" | "assistant" | "system"
   content   String
   createdAt DateTime    @default(now())
   session   ChatSession @relation(fields: [sessionId], references: [id])
 }
 
+// ---------------------------------------------------------------------------
+// Resume — single entity per user's resume.
+// No more templateId — we use one universal design.
+// `rawContent` holds the original user input (any language).
+// `localizedContent` holds the AI-processed bilingual JSON:
+//   {
+//     en: { personal, summary, experience, education, skills },
+//     de: { personal, summary, experience, education, skills }
+//   }
+// PDF generation reads localizedContent[locale] — zero OpenAI calls.
+// ---------------------------------------------------------------------------
 model Resume {
-  id         String    @id @default(cuid())
-  userId     String
-  templateId String
-  title      String
-  locale     String    @default("de")
-  isPublic   Boolean   @default(false)
-  updatedAt  DateTime  @updatedAt
-  user       User      @relation(fields: [userId], references: [id])
-  template   Template  @relation(fields: [templateId], references: [id])
-  sections   Section[]
-}
+  id               String   @id @default(cuid())
+  userId           String
+  chatSessionId    String?  @unique // Link back to the chat that created it
+  title            String
+  photoUrl         String?  // Uploaded photo URL (stored separately from JSON)
+  status           String   @default("draft") // "draft" | "processing" | "ready" | "error"
+  isPublic         Boolean  @default(false)
+  rawContent       Json?    // Original unprocessed data from chat + form
+  localizedContent Json?    // { en: ResumeData, de: ResumeData } — ready for PDF
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-model Section {
-  id       String @id @default(cuid())
-  resumeId String
-  type     String
-  order    Int
-  content  Json
-  resume   Resume @relation(fields: [resumeId], references: [id])
-}
-
-model Template {
-  id         String   @id @default(cuid())
-  name       String
-  previewUrl String?
-  isPremium  Boolean  @default(false)
-  resumes    Resume[]
+  user        User         @relation(fields: [userId], references: [id])
+  chatSession ChatSession? @relation(fields: [chatSessionId], references: [id])
 }
