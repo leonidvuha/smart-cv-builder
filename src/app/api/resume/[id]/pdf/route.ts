@@ -25,15 +25,19 @@ export async function GET(
   const locale: ResumeLocale =
     searchParams.get("locale") === "de" ? "de" : "en";
 
-  // --- Fetch resume from DB ---
-  const resume = await prisma.resume.findUnique({ where: { id } });
+  // --- Fetch resume with user email for ownership check ---
+  const resume = await prisma.resume.findUnique({
+    where: { id },
+    include: { user: { select: { email: true } } },
+  });
 
   if (!resume) {
     return Response.json({ error: "Resume not found" }, { status: 404 });
   }
 
   // --- Check that resume belongs to the authenticated user ---
-  if (resume.userId !== session.user.id) {
+  // Compare by email because session.user.id may not match Prisma user.id
+  if (resume.user.email !== session.user.email) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
