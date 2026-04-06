@@ -32,7 +32,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await prisma.section.deleteMany({ where: { resumeId: id } });
+  // Section table no longer exists — just delete the resume directly
   await prisma.resume.delete({ where: { id } });
 
   return NextResponse.json({ success: true });

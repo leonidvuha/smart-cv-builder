@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { ResumeStatus } from "@/types/resume";
 
 interface Resume {
   id: string;
   title: string;
+  status: ResumeStatus;
   updatedAt: Date;
-  template: { name: string };
 }
 
 export function ResumeCard({ resume }: { resume: Resume }) {
@@ -37,30 +39,66 @@ export function ResumeCard({ resume }: { resume: Resume }) {
           <FileText className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-medium">{resume.title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium">{resume.title}</h3>
+            {resume.status === "processing" && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Processing
+              </Badge>
+            )}
+            {resume.status === "error" && (
+              <Badge variant="destructive" className="text-xs gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Error
+              </Badge>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {resume.template.name} •{" "}
             {new Date(resume.updatedAt).toLocaleDateString()}
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        {/* German PDF */}
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/api/resume/${resume.id}/pdf?locale=de`} target="_blank">
-            🇩🇪 DE
-          </Link>
-        </Button>
+        {/* Status: processing — show skeleton loader */}
+        {resume.status === "processing" && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Generating...</span>
+          </div>
+        )}
 
-        {/* English PDF */}
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/api/resume/${resume.id}/pdf?locale=en`} target="_blank">
-            🇬🇧 EN
-          </Link>
-        </Button>
+        {/* Status: ready — show download buttons */}
+        {resume.status === "ready" && (
+          <>
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={`/api/resume/${resume.id}/pdf?locale=de`}
+                target="_blank"
+              >
+                🇩🇪 DE
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={`/api/resume/${resume.id}/pdf?locale=en`}
+                target="_blank"
+              >
+                🇬🇧 EN
+              </Link>
+            </Button>
+          </>
+        )}
 
-        {/* Delete */}
+        {/* Status: error — show retry hint */}
+        {resume.status === "error" && (
+          <span className="text-xs text-destructive">
+            Generation failed
+          </span>
+        )}
+
+        {/* Delete button — always visible */}
         <Button
           variant="ghost"
           size="sm"

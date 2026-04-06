@@ -18,14 +18,13 @@ export default async function DashboardPage({
 
   const { created } = await searchParams;
 
-  // Get user with profile and resumes
+  // Get user with profile and resumes (no more sections/template includes)
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
       profile: true,
       resumes: {
         orderBy: { updatedAt: "desc" },
-        include: { template: true },
       },
     },
   });
@@ -88,7 +87,7 @@ export default async function DashboardPage({
             <Separator />
 
             <Button asChild className="w-full gap-2">
-              <Link href="/templates">
+              <Link href="/chat">
                 <Plus className="w-4 h-4" />
                 New Resume
               </Link>
@@ -110,7 +109,7 @@ export default async function DashboardPage({
                 You haven&apos;t created any resumes yet.
               </p>
               <Button asChild>
-                <Link href="/templates">Create your first resume</Link>
+                <Link href="/chat">Create your first resume</Link>
               </Button>
             </div>
           ) : (
