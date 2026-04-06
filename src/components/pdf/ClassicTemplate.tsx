@@ -8,7 +8,6 @@ import {
   Font,
 } from "@react-pdf/renderer";
 
-// Register Roboto with Cyrillic support
 Font.register({
   family: "Roboto",
   fonts: [
@@ -23,6 +22,79 @@ Font.register({
   ],
 });
 
+// ─── Locale helpers ────────────────────────────────────────────────────────────
+
+type Locale = "de" | "en";
+
+// Bilingual field: can be plain string OR { de: "...", en: "..." }
+type BiText = string | { de: string; en: string };
+
+function t(value: BiText | null | undefined, locale: Locale): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  return value[locale] ?? value.en ?? "";
+}
+
+const labels: Record<Locale, Record<string, string>> = {
+  de: {
+    summary: "Profil",
+    experience: "Berufserfahrung",
+    education: "Ausbildung",
+    skills: "Kenntnisse",
+    present: "Heute",
+  },
+  en: {
+    summary: "Professional Profile",
+    experience: "Work Experience",
+    education: "Education",
+    skills: "Skills",
+    present: "Present",
+  },
+};
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+type PersonalSection = {
+  firstName: string;
+  lastName: string;
+  address?: string;
+  phone?: string;
+};
+
+type SummarySection = {
+  text: BiText | null;
+};
+
+type ExperienceItem = {
+  company: string;
+  position: BiText;
+  startDate: string;
+  endDate: string | null;
+  responsibilities: BiText;
+};
+
+type EducationItem = {
+  institution: string;
+  degree: BiText;
+  field: BiText;
+  startDate: string;
+  endDate: string;
+};
+
+type SkillsSection = {
+  items: string[];
+};
+
+export type ResumeData = {
+  email: string;
+  locale?: Locale;
+  personal: PersonalSection;
+  summary: SummarySection;
+  experience: { items: ExperienceItem[] };
+  education: { items: EducationItem[] };
+  skills: SkillsSection;
+};
+
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -35,7 +107,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     color: "#1a1a1a",
   },
-  // Header
   header: {
     marginBottom: 24,
     borderBottomWidth: 2,
@@ -44,7 +115,6 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 28,
-    fontFamily: "Roboto",
     fontWeight: 700,
     color: "#1a1a1a",
     marginBottom: 6,
@@ -58,13 +128,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#555555",
   },
-  // Sections
   section: {
     marginBottom: 18,
   },
   sectionTitle: {
     fontSize: 12,
-    fontFamily: "Roboto",
     fontWeight: 700,
     color: "#1a9e75",
     marginBottom: 8,
@@ -76,7 +144,6 @@ const styles = StyleSheet.create({
     color: "#333333",
     lineHeight: 1.6,
   },
-  // Experience / Education entries
   entryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -84,7 +151,6 @@ const styles = StyleSheet.create({
   },
   entryTitle: {
     fontSize: 11,
-    fontFamily: "Roboto",
     fontWeight: 700,
     color: "#1a1a1a",
   },
@@ -103,7 +169,6 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
     marginBottom: 10,
   },
-  // Skills
   skillsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -119,57 +184,14 @@ const styles = StyleSheet.create({
   },
 });
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-type PersonalSection = {
-  firstName: string;
-  lastName: string;
-  address?: string;
-  phone?: string;
-};
-
-type SummarySection = {
-  text: string | null;
-};
-
-type ExperienceItem = {
-  company: string;
-  position: string;
-  startDate: string;
-  endDate: string | null;
-  responsibilities: string;
-};
-
-type EducationItem = {
-  institution: string;
-  degree: string;
-  field: string;
-  startDate: string;
-  endDate: string;
-};
-
-type SkillsSection = {
-  items: string[];
-};
-
-export type ResumeData = {
-  email: string;
-  personal: PersonalSection;
-  summary: SummarySection;
-  experience: { items: ExperienceItem[] };
-  education: { items: EducationItem[] };
-  skills: SkillsSection;
-};
-
 // ─── Helper ────────────────────────────────────────────────────────────────────
 
-function formatDate(date: string | null | undefined): string {
-  if (!date || date === "null") return "Present";
-  // "2023-01" → "Jan 2023", "2022" → "2022"
+function formatDate(date: string | null | undefined, locale: Locale): string {
+  if (!date || date === "null") return labels[locale].present;
   if (date.includes("-")) {
     const [year, month] = date.split("-");
     const monthName = new Date(Number(year), Number(month) - 1).toLocaleString(
-      "en",
+      locale === "de" ? "de-DE" : "en-US",
       { month: "short" },
     );
     return `${monthName} ${year}`;
@@ -180,6 +202,8 @@ function formatDate(date: string | null | undefined): string {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function ClassicTemplate({ data }: { data: ResumeData }): any {
+  const locale: Locale = data.locale ?? "en";
+  const l = labels[locale];
   const { personal, summary, experience, education, skills } = data;
   const fullName = `${personal.firstName} ${personal.lastName}`.trim();
 
@@ -205,26 +229,31 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
         {/* ── Summary ── */}
         {summary?.text ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Professional Profile</Text>
-            <Text style={styles.bodyText}>{summary.text}</Text>
+            <Text style={styles.sectionTitle}>{l.summary}</Text>
+            <Text style={styles.bodyText}>{t(summary.text, locale)}</Text>
           </View>
         ) : null}
 
         {/* ── Experience ── */}
         {experience?.items?.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Work Experience</Text>
+            <Text style={styles.sectionTitle}>{l.experience}</Text>
             {experience.items.map((item, index) => (
               <View key={index}>
                 <View style={styles.entryRow}>
-                  <Text style={styles.entryTitle}>{item.position}</Text>
+                  <Text style={styles.entryTitle}>
+                    {t(item.position, locale)}
+                  </Text>
                   <Text style={styles.entryDate}>
-                    {formatDate(item.startDate)} — {formatDate(item.endDate)}
+                    {formatDate(item.startDate, locale)} —{" "}
+                    {formatDate(item.endDate, locale)}
                   </Text>
                 </View>
                 <Text style={styles.entrySubtitle}>{item.company}</Text>
                 {item.responsibilities ? (
-                  <Text style={styles.entryBody}>{item.responsibilities}</Text>
+                  <Text style={styles.entryBody}>
+                    {t(item.responsibilities, locale)}
+                  </Text>
                 ) : null}
               </View>
             ))}
@@ -234,17 +263,20 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
         {/* ── Education ── */}
         {education?.items?.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Education</Text>
+            <Text style={styles.sectionTitle}>{l.education}</Text>
             {education.items.map((item, index) => (
               <View key={index}>
                 <View style={styles.entryRow}>
                   <Text style={styles.entryTitle}>{item.institution}</Text>
                   <Text style={styles.entryDate}>
-                    {formatDate(item.startDate)} — {formatDate(item.endDate)}
+                    {formatDate(item.startDate, locale)} —{" "}
+                    {formatDate(item.endDate, locale)}
                   </Text>
                 </View>
                 <Text style={styles.entryBody}>
-                  {[item.degree, item.field].filter(Boolean).join(", ")}
+                  {[t(item.degree, locale), t(item.field, locale)]
+                    .filter(Boolean)
+                    .join(", ")}
                 </Text>
               </View>
             ))}
@@ -254,7 +286,7 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
         {/* ── Skills ── */}
         {skills?.items?.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Skills</Text>
+            <Text style={styles.sectionTitle}>{l.skills}</Text>
             <View style={styles.skillsWrap}>
               {skills.items.map((skill, index) => (
                 <Text key={index} style={styles.skillBadge}>

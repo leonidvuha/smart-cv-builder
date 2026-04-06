@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, Download, Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Resume {
@@ -46,13 +46,21 @@ export function ResumeCard({ resume }: { resume: Resume }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="gap-2" asChild>
-          <Link href={`/api/resume/${resume.id}/pdf`} target="_blank">
-            <Download className="w-3.5 h-3.5" />
-            PDF
+        {/* German PDF */}
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/api/resume/${resume.id}/pdf?locale=de`} target="_blank">
+            🇩🇪 DE
           </Link>
         </Button>
 
+        {/* English PDF */}
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/api/resume/${resume.id}/pdf?locale=en`} target="_blank">
+            🇬🇧 EN
+          </Link>
+        </Button>
+
+        {/* Delete */}
         <Button
           variant="ghost"
           size="sm"

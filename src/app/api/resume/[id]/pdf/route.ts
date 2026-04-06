@@ -16,6 +16,10 @@ export async function GET(
 
   const { id } = await params;
 
+  // Read locale from ?locale=de or ?locale=en (default: en)
+  const { searchParams } = new URL(req.url);
+  const locale = searchParams.get("locale") === "de" ? "de" : "en";
+
   const resume = await prisma.resume.findUnique({
     where: { id },
     include: {
@@ -29,7 +33,6 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  // Helper: find section content by type
   function getSection<T>(type: string, fallback: T): T {
     const section = resume!.sections.find((s) => s.type === type);
     return section ? (section.content as T) : fallback;
@@ -37,6 +40,7 @@ export async function GET(
 
   const data: ResumeData = {
     email: resume.user.email,
+    locale,
     personal: getSection("personal", {
       firstName: "John",
       lastName: "Doe",
@@ -56,10 +60,12 @@ export async function GET(
 
   const uint8 = new Uint8Array(buffer);
 
+  const filename = locale === "de" ? "lebenslauf.pdf" : "resume.pdf";
+
   return new Response(uint8, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="resume.pdf"`,
+      "Content-Disposition": `inline; filename="${filename}"`,
     },
   });
 }

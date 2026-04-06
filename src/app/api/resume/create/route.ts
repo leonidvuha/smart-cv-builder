@@ -4,34 +4,51 @@ import OpenAI from "openai";
 
 const openai = new OpenAI();
 
-const EXTRACTION_PROMPT = `You are a resume data extractor. Based on the conversation history below, extract the candidate's information and return ONLY a valid JSON object. No markdown, no explanations, just raw JSON.
+const EXTRACTION_PROMPT = `You are a resume data extractor. Based on the conversation history, extract the candidate's information and return ONLY a valid JSON object. No markdown, no explanations, just raw JSON.
+
+Text fields that appear in the resume (summary, position, responsibilities, degree, field) must be bilingual objects with "de" and "en" keys.
+Names, companies, institutions, dates, phone, address, skills — stay as plain strings.
 
 Required format:
 {
-  "summary": "short professional summary (2-3 sentences)",
+  "summary": {
+    "de": "Kurze professionelle Zusammenfassung auf Deutsch (2-3 Sätze)",
+    "en": "Short professional summary in English (2-3 sentences)"
+  },
   "experience": [
     {
       "company": "company name",
-      "position": "job title",
+      "position": {
+        "de": "Berufsbezeichnung auf Deutsch",
+        "en": "Job title in English"
+      },
       "startDate": "YYYY-MM",
       "endDate": "YYYY-MM or null if current",
-      "responsibilities": "key responsibilities and achievements"
+      "responsibilities": {
+        "de": "Aufgaben und Erfolge auf Deutsch",
+        "en": "Responsibilities and achievements in English"
+      }
     }
   ],
   "education": [
     {
       "institution": "school or university name",
-      "degree": "degree type",
-      "field": "field of study",
+      "degree": {
+        "de": "Abschluss auf Deutsch",
+        "en": "Degree in English"
+      },
+      "field": {
+        "de": "Studienrichtung auf Deutsch",
+        "en": "Field of study in English"
+      },
       "startDate": "YYYY",
       "endDate": "YYYY"
     }
   ],
-  "skills": ["skill1", "skill2"],
-  
+  "skills": ["skill1", "skill2"]
 }
 
-If a field is unknown, use null for strings/numbers or [] for arrays. Always return valid JSON.`;
+If a field is unknown, use null for objects or [] for arrays. Always return valid JSON.`;
 
 export async function POST(req: Request) {
   const session = await auth();
