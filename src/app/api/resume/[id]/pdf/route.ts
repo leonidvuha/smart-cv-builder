@@ -60,7 +60,11 @@ export async function GET(
   // react-pdf's renderToBuffer expects its own ReactElement type which
   // is incompatible with React 18 — cast to any to bypass the conflict.
   const buffer = await renderToBuffer(
-    React.createElement(ClassicTemplate, { data }) as any,
+    React.createElement(ClassicTemplate, {
+      data,
+      locale,
+      email: session.user.email,
+    }) as any,
   );
 
   const uint8 = new Uint8Array(buffer);

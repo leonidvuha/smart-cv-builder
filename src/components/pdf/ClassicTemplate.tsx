@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
+import type { ResumeData, ResumeLocale } from "@/types/resume";
 
 Font.register({
   family: "Roboto",
@@ -22,20 +23,9 @@ Font.register({
   ],
 });
 
-// ─── Locale helpers ────────────────────────────────────────────────────────────
+// ─── Static labels per locale ─────────────────────────────────────────────────
 
-type Locale = "de" | "en";
-
-// Bilingual field: can be plain string OR { de: "...", en: "..." }
-type BiText = string | { de: string; en: string };
-
-function t(value: BiText | null | undefined, locale: Locale): string {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  return value[locale] ?? value.en ?? "";
-}
-
-const labels: Record<Locale, Record<string, string>> = {
+const labels: Record<ResumeLocale, Record<string, string>> = {
   de: {
     summary: "Profil",
     experience: "Berufserfahrung",
@@ -52,50 +42,7 @@ const labels: Record<Locale, Record<string, string>> = {
   },
 };
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-type PersonalSection = {
-  firstName: string;
-  lastName: string;
-  address?: string;
-  phone?: string;
-};
-
-type SummarySection = {
-  text: BiText | null;
-};
-
-type ExperienceItem = {
-  company: string;
-  position: BiText;
-  startDate: string;
-  endDate: string | null;
-  responsibilities: BiText;
-};
-
-type EducationItem = {
-  institution: string;
-  degree: BiText;
-  field: BiText;
-  startDate: string;
-  endDate: string;
-};
-
-type SkillsSection = {
-  items: string[];
-};
-
-export type ResumeData = {
-  email: string;
-  locale?: Locale;
-  personal: PersonalSection;
-  summary: SummarySection;
-  experience: { items: ExperienceItem[] };
-  education: { items: EducationItem[] };
-  skills: SkillsSection;
-};
-
-// ─── Styles ────────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   page: {
@@ -184,9 +131,20 @@ const styles = StyleSheet.create({
   },
 });
 
-// ─── Helper ────────────────────────────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────────────────────────
 
-function formatDate(date: string | null | undefined, locale: Locale): string {
+interface ClassicTemplateProps {
+  data: ResumeData;
+  locale?: ResumeLocale; // Used only for static labels and date formatting
+  email?: string; // User email, passed separately (not part of ResumeData)
+}
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+
+function formatDate(
+  date: string | null | undefined,
+  locale: ResumeLocale,
+): string {
   if (!date || date === "null") return labels[locale].present;
   if (date.includes("-")) {
     const [year, month] = date.split("-");
@@ -199,10 +157,13 @@ function formatDate(date: string | null | undefined, locale: Locale): string {
   return date;
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────────
 
-export function ClassicTemplate({ data }: { data: ResumeData }): any {
-  const locale: Locale = data.locale ?? "en";
+export function ClassicTemplate({
+  data,
+  locale = "en",
+  email,
+}: ClassicTemplateProps): any {
   const l = labels[locale];
   const { personal, summary, experience, education, skills } = data;
   const fullName = `${personal.firstName} ${personal.lastName}`.trim();
@@ -214,8 +175,8 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
         <View style={styles.header}>
           <Text style={styles.name}>{fullName}</Text>
           <View style={styles.contactRow}>
-            {data.email ? (
-              <Text style={styles.contactText}>{data.email}</Text>
+            {email ? (
+              <Text style={styles.contactText}>{email}</Text>
             ) : null}
             {personal.phone ? (
               <Text style={styles.contactText}>{personal.phone}</Text>
@@ -230,7 +191,7 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
         {summary?.text ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{l.summary}</Text>
-            <Text style={styles.bodyText}>{t(summary.text, locale)}</Text>
+            <Text style={styles.bodyText}>{summary.text}</Text>
           </View>
         ) : null}
 
@@ -241,9 +202,7 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
             {experience.items.map((item, index) => (
               <View key={index}>
                 <View style={styles.entryRow}>
-                  <Text style={styles.entryTitle}>
-                    {t(item.position, locale)}
-                  </Text>
+                  <Text style={styles.entryTitle}>{item.position}</Text>
                   <Text style={styles.entryDate}>
                     {formatDate(item.startDate, locale)} —{" "}
                     {formatDate(item.endDate, locale)}
@@ -252,7 +211,7 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
                 <Text style={styles.entrySubtitle}>{item.company}</Text>
                 {item.responsibilities ? (
                   <Text style={styles.entryBody}>
-                    {t(item.responsibilities, locale)}
+                    {item.responsibilities}
                   </Text>
                 ) : null}
               </View>
@@ -274,9 +233,7 @@ export function ClassicTemplate({ data }: { data: ResumeData }): any {
                   </Text>
                 </View>
                 <Text style={styles.entryBody}>
-                  {[t(item.degree, locale), t(item.field, locale)]
-                    .filter(Boolean)
-                    .join(", ")}
+                  {[item.degree, item.field].filter(Boolean).join(", ")}
                 </Text>
               </View>
             ))}

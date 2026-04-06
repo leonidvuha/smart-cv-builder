@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+echo "`n# Claude Code worktrees`n.claude/" >> .gitignore
+.claude
