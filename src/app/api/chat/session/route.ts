@@ -1,13 +1,11 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: Request) {
+export async function POST() {
   const session = await auth();
   if (!session?.user?.email) {
     return new Response("Unauthorized", { status: 401 });
   }
-
-  const { templateId } = await req.json();
 
   // Find or create user
   const user = await prisma.user.upsert({
@@ -20,11 +18,11 @@ export async function POST(req: Request) {
   });
 
   const chatSession = await prisma.chatSession.create({
-    data: {
-      userId: user.id,
-      templateId: templateId || "template-1",
-    },
+    data: { userId: user.id },
   });
 
-  return Response.json({ sessionId: chatSession.id });
+  return Response.json({
+    sessionId: chatSession.id,
+    email: session.user.email,
+  });
 }

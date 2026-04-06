@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Send, Upload, User, CheckCircle } from "lucide-react";
+import {
+  Send,
+  Upload,
+  User,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import Image from "next/image";
+import type { RawContent } from "@/types/resume";
 
 type Message = {
   role: "user" | "assistant";
@@ -14,48 +21,61 @@ type Message = {
 };
 
 export default function ChatPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const templateId = searchParams.get("template") || "template-1";
+  const params = useParams();
+  const locale = (params.locale as string) || "en";
 
+  // --- Chat state ---
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
-        "Hi! I'm your resume assistant. Let's build your professional resume together. Where did you work most recently — what was the company and your position?",
+        "Hi! I'm your resume assistant. Let's build your professional resume together. Tell me about your most recent work experience — what was the company and your position?",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // --- Form state ---
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- Resume creation state ---
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // --- Create chat session on mount ---
   useEffect(() => {
     const createSession = async () => {
-      const res = await fetch("/api/chat/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateId }),
-      });
-      const data = await res.json();
-      setSessionId(data.sessionId);
+      try {
+        const res = await fetch("/api/chat/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        setSessionId(data.sessionId);
+        if (data.email) setUserEmail(data.email);
+      } catch (err) {
+        console.error("Failed to create chat session:", err);
+      }
     };
     createSession();
-  }, [templateId]);
+  }, []);
 
+  // --- Auto-scroll to latest message ---
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // --- Send chat message ---
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage: Message = { role: "user", content: input };
@@ -86,13 +106,14 @@ export default function ChatPage() {
           return updated;
         });
       }
-    } catch (error) {
-      console.error("Chat error:", error);
+    } catch (err) {
+      console.error("Chat error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- Photo upload handler ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -100,26 +121,62 @@ export default function ChatPage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
+  // --- Create Resume (main action) ---
   const handleCreate = async () => {
     if (!sessionId) return;
+
+    // Clear previous error
+    setError(null);
     setIsCreating(true);
+
     try {
-      const formData = new FormData();
-      formData.append("sessionId", sessionId);
-      formData.append("templateId", templateId);
-      formData.append("firstName", firstName);
-      formData.append("lastName", lastName);
-      formData.append("address", address);
-      formData.append("phone", phone);
-      formData.append("chatMessages", JSON.stringify(messages));
-      if (photo) formData.append("photo", photo);
+      // Build chat text from all messages
+      const chatText = messages
+        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+        .join("\n\n");
+
+      // Assemble RawContent matching our type definition
+      const rawContent: RawContent = {
+        chatText,
+        form: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: phone.trim(),
+          email: userEmail,
+        },
+      };
+
+      // TODO: implement photo upload to cloud storage and get URL
+      // For now photoUrl is null; will be implemented when file upload is added
+      const photoUrl: string | null = null;
+
       const res = await fetch("/api/resume/create", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rawContent,
+          chatSessionId: sessionId,
+          photoUrl,
+        }),
       });
-      if (res.ok) router.push("/dashboard?created=true");
-    } catch (error) {
-      console.error("Create error:", error);
+
+      const data = await res.json();
+
+      if (res.ok && data.status === "ready") {
+        // Success — redirect to dashboard
+        router.push(`/${locale}/dashboard?created=true`);
+      } else {
+        // API returned an error or non-ready status
+        setError(
+          data.error ||
+            "Something went wrong while generating your resume. Please try again.",
+        );
+      }
+    } catch (err) {
+      console.error("Create error:", err);
+      setError(
+        "Network error. Please check your connection and try again.",
+      );
     } finally {
       setIsCreating(false);
     }
@@ -127,10 +184,10 @@ export default function ChatPage() {
 
   return (
     <div className="h-[calc(100vh-64px)] flex">
+      {/* ── Left column: Chat ── */}
       <div className="flex-1 flex flex-col border-r border-border">
         <div className="px-6 py-4 border-b border-border flex items-center gap-3">
           <h1 className="font-semibold text-lg">Resume Assistant</h1>
-          <Badge variant="secondary">{templateId}</Badge>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {messages.map((msg, i) => (
@@ -166,11 +223,12 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type your message..."
-              className="flex-1 bg-muted text-foreground rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+              disabled={isCreating}
+              className="flex-1 bg-muted text-foreground rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
             />
             <Button
               onClick={sendMessage}
-              disabled={isLoading}
+              disabled={isLoading || isCreating}
               size="sm"
               className="rounded-xl px-4"
             >
@@ -180,6 +238,7 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* ── Right column: Form ── */}
       <div className="w-80 flex flex-col">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-semibold text-lg">Your Details</h2>
@@ -188,6 +247,7 @@ export default function ChatPage() {
           </p>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* Photo upload */}
           <div className="flex flex-col items-center gap-3">
             <div
               onClick={() => fileInputRef.current?.click()}
@@ -221,6 +281,8 @@ export default function ChatPage() {
             />
           </div>
           <Separator />
+
+          {/* Form fields */}
           <div className="space-y-3">
             {[
               {
@@ -234,12 +296,6 @@ export default function ChatPage() {
                 value: lastName,
                 setter: setLastName,
                 placeholder: "Doe",
-              },
-              {
-                label: "Address",
-                value: address,
-                setter: setAddress,
-                placeholder: "Berlin, Germany",
               },
               {
                 label: "Phone",
@@ -257,20 +313,35 @@ export default function ChatPage() {
                   value={value}
                   onChange={(e) => setter(e.target.value)}
                   placeholder={placeholder}
-                  className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                  disabled={isCreating}
+                  className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 disabled:opacity-50"
                 />
               </div>
             ))}
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-border">
+
+        {/* Bottom: Error message + Create button */}
+        <div className="px-6 py-4 border-t border-border space-y-3">
+          {/* Error toast */}
+          {error && (
+            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Main action button */}
           <Button
             onClick={handleCreate}
-            disabled={isCreating}
+            disabled={isCreating || !sessionId}
             className="w-full gap-2"
           >
             {isCreating ? (
-              <span className="animate-pulse">Creating...</span>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
             ) : (
               <>
                 <CheckCircle className="w-4 h-4" />
