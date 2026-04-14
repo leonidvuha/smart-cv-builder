@@ -12,6 +12,8 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Image from "next/image";
 import type { RawContent } from "@/types/resume";
@@ -33,7 +35,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "", // Will be set from translations in useEffect
+      content: "",
     },
   ]);
   const [input, setInput] = useState("");
@@ -53,6 +55,9 @@ export default function ChatPage() {
   // --- Resume creation state ---
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // --- Mobile: toggle form panel ---
+  const [showForm, setShowForm] = useState(false);
 
   // --- Set localized greeting on mount ---
   useEffect(() => {
@@ -83,7 +88,7 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // --- Send chat message (pass locale so API knows which language to reply in) ---
+  // --- Send chat message ---
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage: Message = { role: "user", content: input };
@@ -122,13 +127,12 @@ export default function ChatPage() {
     }
   };
 
-  // --- Photo upload handler: convert to base64 for server-side PDF rendering ---
+  // --- Photo upload handler ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
-
     const reader = new FileReader();
     reader.onloadend = () => {
       setPhotoBase64(reader.result as string);
@@ -136,10 +140,9 @@ export default function ChatPage() {
     reader.readAsDataURL(file);
   };
 
-  // --- Create Resume (main action) ---
+  // --- Create Resume ---
   const handleCreate = async () => {
     if (!sessionId) return;
-
     setError(null);
     setIsCreating(true);
 
@@ -163,11 +166,7 @@ export default function ChatPage() {
       const res = await fetch("/api/resume/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rawContent,
-          chatSessionId: sessionId,
-          photoUrl,
-        }),
+        body: JSON.stringify({ rawContent, chatSessionId: sessionId, photoUrl }),
       });
 
       const data = await res.json();
@@ -185,7 +184,7 @@ export default function ChatPage() {
     }
   };
 
-  // --- Form field definitions (localized) ---
+  // --- Form fields ---
   const formFields = [
     {
       label: t("firstName"),
@@ -207,21 +206,133 @@ export default function ChatPage() {
     },
   ];
 
-  return (
-    <div className="h-[calc(100vh-64px)] flex">
-      {/* ── Left column: Chat ── */}
-      <div className="flex-1 flex flex-col border-r border-border">
-        <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-          <h1 className="font-semibold text-lg">{t("title")}</h1>
+  // --- Shared form content (used in both mobile and desktop) ---
+  const formContent = (
+    <>
+      {/* Photo upload */}
+      <div className="flex flex-col items-center gap-3">
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          className="w-20 h-20 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden"
+        >
+          {photoPreview ? (
+            <Image
+              src={photoPreview}
+              alt="Photo"
+              width={80}
+              height={80}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-8 h-8 text-muted-foreground" />
+          )}
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+        >
+          <Upload className="w-3 h-3" />
+          {t("uploadPhoto")}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoChange}
+          className="hidden"
+        />
+      </div>
+      <Separator />
+
+      {/* Form fields */}
+      <div className="space-y-3">
+        {formFields.map(({ label, value, setter, placeholder }) => (
+          <div key={label}>
+            <label className="text-xs text-muted-foreground mb-1 block">
+              {label}
+            </label>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setter(e.target.value)}
+              placeholder={placeholder}
+              disabled={isCreating}
+              className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 disabled:opacity-50"
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  // --- Error + Create button (shared) ---
+  const actionButton = (
+    <div className="space-y-3">
+      {error && (
+        <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+      <Button
+        onClick={handleCreate}
+        disabled={isCreating || !sessionId}
+        className="w-full gap-2"
+      >
+        {isCreating ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {t("generating")}
+          </>
+        ) : (
+          <>
+            <CheckCircle className="w-4 h-4" />
+            {t("createResume")}
+          </>
+        )}
+      </Button>
+    </div>
+  );
+
+  return (
+    <div className="h-[calc(100vh-64px)] flex flex-col md:flex-row">
+      {/* ── Chat column ── */}
+      <div className="flex-1 flex flex-col min-h-0 border-r-0 md:border-r border-border">
+        <div className="px-4 sm:px-6 py-4 border-b border-border flex items-center justify-between gap-3">
+          <h1 className="font-semibold text-lg">{t("title")}</h1>
+          {/* Mobile: toggle form button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="md:hidden gap-1.5"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+            {t("detailsTitle")}
+          </Button>
+        </div>
+
+        {/* Mobile: collapsible form panel */}
+        {showForm && (
+          <div className="md:hidden border-b border-border px-4 py-4 space-y-4 bg-card/50 max-h-[60vh] overflow-y-auto">
+            {formContent}
+            <div className="pt-2">{actionButton}</div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
           {messages.map((msg, i) => (
             <div
               key={i}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                className={`max-w-[85%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "bg-muted text-foreground rounded-bl-sm"
@@ -240,16 +351,18 @@ export default function ChatPage() {
           )}
           <div ref={bottomRef} />
         </div>
-        <div className="px-6 py-4 border-t border-border">
+
+        {/* Input */}
+        <div className="px-4 sm:px-6 py-4 border-t border-border">
           <div className="flex gap-2 items-end">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
-                // Auto-resize: reset height then set to scrollHeight, capped at 4 lines
                 e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 96) + "px";
+                e.target.style.height =
+                  Math.min(e.target.scrollHeight, 96) + "px";
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -275,8 +388,8 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* ── Right column: Form ── */}
-      <div className="w-80 flex flex-col">
+      {/* ── Right column: Form (desktop only) ── */}
+      <div className="hidden md:flex w-80 flex-col">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-semibold text-lg">{t("detailsTitle")}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -284,89 +397,17 @@ export default function ChatPage() {
           </p>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {/* Photo upload */}
-          <div className="flex flex-col items-center gap-3">
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="w-20 h-20 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden"
-            >
-              {photoPreview ? (
-                <Image
-                  src={photoPreview}
-                  alt="Photo"
-                  width={80}
-                  height={80}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-8 h-8 text-muted-foreground" />
-              )}
-            </div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-            >
-              <Upload className="w-3 h-3" />
-              {t("uploadPhoto")}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="hidden"
-            />
-          </div>
-          <Separator />
-
-          {/* Form fields */}
-          <div className="space-y-3">
-            {formFields.map(({ label, value, setter, placeholder }) => (
-              <div key={label}>
-                <label className="text-xs text-muted-foreground mb-1 block">
-                  {label}
-                </label>
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) => setter(e.target.value)}
-                  placeholder={placeholder}
-                  disabled={isCreating}
-                  className="w-full bg-muted rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 disabled:opacity-50"
-                />
-              </div>
-            ))}
-          </div>
+          {formContent}
         </div>
-
-        {/* Bottom: Error message + Create button */}
-        <div className="px-6 py-4 border-t border-border space-y-3">
-          {error && (
-            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <Button
-            onClick={handleCreate}
-            disabled={isCreating || !sessionId}
-            className="w-full gap-2"
-          >
-            {isCreating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {t("generating")}
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                {t("createResume")}
-              </>
-            )}
-          </Button>
-        </div>
+        <div className="px-6 py-4 border-t border-border">{actionButton}</div>
       </div>
+
+      {/* ── Mobile: sticky Create button at bottom (when form is hidden) ── */}
+      {!showForm && (
+        <div className="md:hidden px-4 py-3 border-t border-border bg-background">
+          {actionButton}
+        </div>
+      )}
     </div>
   );
 }
