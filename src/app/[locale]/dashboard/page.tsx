@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { FileText, Plus, User } from "lucide-react";
 import { ResumeCard } from "@/components/ResumeCard";
 import { getTranslations } from "next-intl/server";
-import type { Resume } from "@prisma/client";
+
 
 export default async function DashboardPage({
   searchParams,
@@ -116,7 +116,7 @@ export default async function DashboardPage({
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {resumes.map((resume: Resume) => (
+              {resumes.map((resume: { id: string; title: string; status: string; updatedAt: Date }) => (
                 <ResumeCard key={resume.id} resume={resume} />
               ))}
             </div>
