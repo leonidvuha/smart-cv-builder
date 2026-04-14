@@ -18,7 +18,7 @@ import { FileText, Globe, LogOut, User } from "lucide-react";
 const locales = [
   { code: "de", display: "DE", label: "Deutsch" },
   { code: "en", display: "EN", label: "English" },
-  { code: "uk", display: "UA", label: "Українська" },
+  { code: "ua", display: "UA", label: "Українська" },
 ];
 
 export default function Navbar() {

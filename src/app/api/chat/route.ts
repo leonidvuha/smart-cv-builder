@@ -10,7 +10,7 @@ const openai = new OpenAI({
 const LOCALE_NAMES: Record<string, string> = {
   de: "German",
   en: "English",
-  uk: "Ukrainian",
+  ua: "Ukrainian",
 };
 
 function buildSystemPrompt(locale: string): string {
