@@ -177,6 +177,12 @@ export async function POST(req: Request) {
       throw new Error("OpenAI response missing 'en' or 'de' key");
     }
 
+    // --- Inject photoUrl into personal section for both locales ---
+    if (resume.photoUrl) {
+      parsed.en.personal.photoUrl = resume.photoUrl;
+      parsed.de.personal.photoUrl = resume.photoUrl;
+    }
+
     // --- Success: save localized content, set status "ready" ---
     const updated = await prisma.resume.update({
       where: { id: resume.id },

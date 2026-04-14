@@ -4,6 +4,7 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
@@ -59,6 +60,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "#1a9e75",
     paddingBottom: 16,
+    flexDirection: "row",
+    gap: 16,
+  },
+  photo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    objectFit: "cover",
+  },
+  headerInfo: {
+    flex: 1,
+    justifyContent: "center",
   },
   name: {
     fontSize: 28,
@@ -173,17 +186,22 @@ export function ClassicTemplate({
       <Page size="A4" style={styles.page}>
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.name}>{fullName}</Text>
-          <View style={styles.contactRow}>
-            {email ? (
-              <Text style={styles.contactText}>{email}</Text>
-            ) : null}
-            {personal.phone ? (
-              <Text style={styles.contactText}>{personal.phone}</Text>
-            ) : null}
-            {personal.address ? (
-              <Text style={styles.contactText}>{personal.address}</Text>
-            ) : null}
+          {personal.photoUrl ? (
+            <Image src={personal.photoUrl} style={styles.photo} />
+          ) : null}
+          <View style={styles.headerInfo}>
+            <Text style={styles.name}>{fullName}</Text>
+            <View style={styles.contactRow}>
+              {email ? (
+                <Text style={styles.contactText}>{email}</Text>
+              ) : null}
+              {personal.phone ? (
+                <Text style={styles.contactText}>{personal.phone}</Text>
+              ) : null}
+              {personal.address ? (
+                <Text style={styles.contactText}>{personal.address}</Text>
+              ) : null}
+            </View>
           </View>
         </View>
 

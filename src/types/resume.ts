@@ -15,6 +15,7 @@ export interface PersonalSection {
   lastName: string;
   phone: string;
   address: string;
+  photoUrl?: string; // Uploaded photo, injected after OpenAI response
 }
 
 export interface SummarySection {
