@@ -14,7 +14,7 @@ export interface PersonalSection {
   firstName: string;
   lastName: string;
   phone: string;
-  address: string;
+  address?: string;
   photoUrl?: string; // Uploaded photo, injected after OpenAI response
 }
 
@@ -88,6 +88,7 @@ export interface RawContent {
     lastName: string;
     phone: string;
     email: string;
+    address?: string;
   };
 }
 

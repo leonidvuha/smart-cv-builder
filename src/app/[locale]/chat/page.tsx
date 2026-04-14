@@ -47,6 +47,7 @@ export default function ChatPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -127,10 +128,15 @@ export default function ChatPage() {
     }
   };
 
-  // --- Photo upload handler ---
+  // --- Photo upload handler with size validation ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert(t("photoTooLarge"));
+      e.target.value = "";
+      return;
+    }
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
     const reader = new FileReader();
@@ -158,6 +164,7 @@ export default function ChatPage() {
           lastName: lastName.trim(),
           phone: phone.trim(),
           email: userEmail,
+          address: address.trim() || undefined,
         },
       };
 
@@ -204,6 +211,12 @@ export default function ChatPage() {
       setter: setPhone,
       placeholder: t("phonePlaceholder"),
     },
+    {
+      label: t("address"),
+      value: address,
+      setter: setAddress,
+      placeholder: t("addressPlaceholder"),
+    },
   ];
 
   // --- Shared form content (used in both mobile and desktop) ---
@@ -234,10 +247,11 @@ export default function ChatPage() {
           <Upload className="w-3 h-3" />
           {t("uploadPhoto")}
         </button>
+        <p className="text-[10px] text-muted-foreground/60">{t("photoFormat")}</p>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept=".jpg,.jpeg,.png"
           onChange={handlePhotoChange}
           className="hidden"
         />
