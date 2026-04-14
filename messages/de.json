@@ -48,7 +48,7 @@
     "error": "Fehler",
     "generating": "Wird erstellt...",
     "generationFailed": "Erstellung fehlgeschlagen",
-    "deleteConfirm": "„{title}" löschen?",
+    "deleteConfirm": "{title} löschen?",
     "deleteFailed": "Löschen fehlgeschlagen. Versuchen Sie es erneut."
   }
 }

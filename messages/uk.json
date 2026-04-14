@@ -48,7 +48,7 @@
     "error": "Помилка",
     "generating": "Створюється...",
     "generationFailed": "Створення не вдалося",
-    "deleteConfirm": "Видалити «{title}»?",
+    "deleteConfirm": "Видалити {title}?",
     "deleteFailed": "Не вдалося видалити. Спробуйте ще раз."
   }
 }
