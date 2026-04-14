@@ -34,7 +34,12 @@ export default async function DashboardPage({
   });
 
   const profile = user?.profile;
-  const resumes = user?.resumes ?? [];
+  const resumes = (user?.resumes ?? []) as Array<{
+    id: string;
+    title: string;
+    status: ResumeStatus;
+    updatedAt: Date;
+  }>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -117,7 +122,7 @@ export default async function DashboardPage({
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {resumes.map((resume: { id: string; title: string; status: ResumeStatus; updatedAt: Date }) => (
+              {resumes.map((resume) => (
                 <ResumeCard key={resume.id} resume={resume} />
               ))}
             </div>
