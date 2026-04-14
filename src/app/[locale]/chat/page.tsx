@@ -45,6 +45,7 @@ export default function ChatPage() {
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Resume creation state ---
@@ -113,12 +114,18 @@ export default function ChatPage() {
     }
   };
 
-  // --- Photo upload handler ---
+  // --- Photo upload handler: convert to base64 for server-side PDF rendering ---
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   // --- Create Resume (main action) ---
@@ -146,9 +153,8 @@ export default function ChatPage() {
         },
       };
 
-      // TODO: implement photo upload to cloud storage and get URL
-      // For now photoUrl is null; will be implemented when file upload is added
-      const photoUrl: string | null = null;
+      // Photo is stored as base64 data URI for server-side PDF rendering
+      const photoUrl: string | null = photoBase64;
 
       const res = await fetch("/api/resume/create", {
         method: "POST",
