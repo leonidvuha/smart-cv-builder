@@ -6,7 +6,20 @@
   },
   "home": {
     "title": "Smart CV Builder",
-    "subtitle": "Create your professional resume with AI"
+    "subtitle": "Create your professional resume with AI",
+    "badge": "AI-powered Resume Builder",
+    "getStarted": "Get started",
+    "signIn": "Sign in",
+    "featuresTitle": "Everything you need",
+    "featureAiTitle": "AI Chat",
+    "featureAiDesc": "Our AI collects your experience through a friendly conversation and suggests relevant skills.",
+    "featureGlobalTitle": "German & International",
+    "featureGlobalDesc": "Generate a Lebenslauf for the German market or an international CV in English.",
+    "featurePdfTitle": "PDF Export",
+    "featurePdfDesc": "Download your resume as a professional PDF ready to send to employers.",
+    "ctaTitle": "Ready to build your resume?",
+    "ctaSubtitle": "Let our AI guide you through the process — it only takes a few minutes.",
+    "ctaButton": "Start now"
   },
   "navbar": {
     "dashboard": "Dashboard",

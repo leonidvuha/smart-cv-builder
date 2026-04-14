@@ -16,9 +16,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FileText, Globe, LogOut, User } from "lucide-react";
 
 const locales = [
-  { code: "de", label: "Deutsch" },
-  { code: "en", label: "English" },
-  { code: "uk", label: "Українська" },
+  { code: "de", display: "DE", label: "Deutsch" },
+  { code: "en", display: "EN", label: "English" },
+  { code: "uk", display: "UA", label: "Українська" },
 ];
 
 export default function Navbar() {
@@ -58,7 +58,7 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
                 <Globe className="w-4 h-4" />
-                {currentLocale.toUpperCase()}
+                {locales.find((l) => l.code === currentLocale)?.display ?? currentLocale.toUpperCase()}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -6,7 +6,20 @@
   },
   "home": {
     "title": "Smart CV Builder",
-    "subtitle": "Erstellen Sie Ihren professionellen Lebenslauf mit KI"
+    "subtitle": "Erstellen Sie Ihren professionellen Lebenslauf mit KI",
+    "badge": "KI-gestützter Lebenslauf-Builder",
+    "getStarted": "Jetzt starten",
+    "signIn": "Anmelden",
+    "featuresTitle": "Alles, was Sie brauchen",
+    "featureAiTitle": "KI-Chat",
+    "featureAiDesc": "Unsere KI sammelt Ihre Erfahrungen in einem freundlichen Gespräch und schlägt passende Fähigkeiten vor.",
+    "featureGlobalTitle": "Deutsch & International",
+    "featureGlobalDesc": "Erstellen Sie einen Lebenslauf für den deutschen Markt oder einen internationalen CV auf Englisch.",
+    "featurePdfTitle": "PDF-Export",
+    "featurePdfDesc": "Laden Sie Ihren Lebenslauf als professionelles PDF herunter, bereit zum Versenden an Arbeitgeber.",
+    "ctaTitle": "Bereit, Ihren Lebenslauf zu erstellen?",
+    "ctaSubtitle": "Lassen Sie sich von unserer KI durch den Prozess führen — es dauert nur wenige Minuten.",
+    "ctaButton": "Jetzt starten"
   },
   "navbar": {
     "dashboard": "Dashboard",
