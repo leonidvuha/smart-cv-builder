@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Plus, User } from "lucide-react";
 import { ResumeCard } from "@/components/ResumeCard";
+import { getTranslations } from "next-intl/server";
 
 export default async function DashboardPage({
   searchParams,
@@ -16,9 +17,10 @@ export default async function DashboardPage({
   const session = await auth();
   if (!session?.user?.email) redirect("/auth/signin");
 
+  const t = await getTranslations("dashboard");
   const { created } = await searchParams;
 
-  // Get user with profile and resumes (no more sections/template includes)
+  // Get user with profile and resumes
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
@@ -37,7 +39,7 @@ export default async function DashboardPage({
       {/* Success banner */}
       {created && (
         <div className="mb-6 bg-primary/10 border border-primary/30 text-primary rounded-xl px-5 py-3 text-sm flex items-center gap-2">
-          ✓ Your resume was created successfully!
+          ✓ {t("successBanner")}
         </div>
       )}
 
@@ -45,7 +47,6 @@ export default async function DashboardPage({
         {/* LEFT — Profile card */}
         <div className="md:col-span-1">
           <div className="bg-card border border-border rounded-2xl p-6 flex flex-col items-center gap-4">
-            {/* Avatar */}
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
               <User className="w-8 h-8 text-muted-foreground" />
             </div>
@@ -67,19 +68,19 @@ export default async function DashboardPage({
             <div className="w-full space-y-2 text-sm">
               {profile?.phone && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Phone</span>
+                  <span className="text-muted-foreground">{t("phone")}</span>
                   <span>{profile.phone}</span>
                 </div>
               )}
               {profile?.address && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Address</span>
+                  <span className="text-muted-foreground">{t("address")}</span>
                   <span>{profile.address}</span>
                 </div>
               )}
               {!profile?.phone && !profile?.address && (
                 <p className="text-muted-foreground text-center text-xs">
-                  No details yet
+                  {t("noDetails")}
                 </p>
               )}
             </div>
@@ -89,7 +90,7 @@ export default async function DashboardPage({
             <Button asChild className="w-full gap-2">
               <Link href="/chat">
                 <Plus className="w-4 h-4" />
-                New Resume
+                {t("newResume")}
               </Link>
             </Button>
           </div>
@@ -98,18 +99,18 @@ export default async function DashboardPage({
         {/* RIGHT — Resumes list */}
         <div className="md:col-span-2 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">My Resumes</h1>
-            <Badge variant="secondary">{resumes.length} total</Badge>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
+            <Badge variant="secondary">
+              {resumes.length} {t("total")}
+            </Badge>
           </div>
 
           {resumes.length === 0 ? (
             <div className="bg-card border border-border rounded-2xl p-10 flex flex-col items-center gap-4 text-center">
               <FileText className="w-10 h-10 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                You haven&apos;t created any resumes yet.
-              </p>
+              <p className="text-muted-foreground">{t("noResumes")}</p>
               <Button asChild>
-                <Link href="/chat">Create your first resume</Link>
+                <Link href="/chat">{t("createFirst")}</Link>
               </Button>
             </div>
           ) : (

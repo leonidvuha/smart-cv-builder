@@ -6,8 +6,17 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// System prompt for resume collection
-const SYSTEM_PROMPT = `You are a professional resume assistant helping users create a Lebenslauf (German resume) and international CV.
+// Locale-aware system prompt for resume collection
+const LOCALE_NAMES: Record<string, string> = {
+  de: "German",
+  en: "English",
+  uk: "Ukrainian",
+};
+
+function buildSystemPrompt(locale: string): string {
+  const lang = LOCALE_NAMES[locale] || "English";
+
+  return `You are a professional resume assistant helping users create a Lebenslauf (German resume) and international CV.
 
 Your job is to collect the following information through friendly conversation:
 
@@ -19,17 +28,19 @@ Your job is to collect the following information through friendly conversation:
 Do NOT ask for: full name, address, phone number, photo, birth day, or gender — the user will fill those in separately.
 
 Ask one or two questions at a time. Be friendly and professional.
-Respond in the same language the user writes in.
+
+IMPORTANT: You MUST respond strictly in ${lang}. All your messages must be in ${lang}, regardless of what language the user writes in.
+
 When you have collected all information, summarize it and confirm with the user.`;
+}
 
 export async function POST(req: Request) {
-  // Check authentication
   const session = await auth();
   if (!session?.user?.email) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages, sessionId } = await req.json();
+  const { messages, sessionId, locale } = await req.json();
 
   // Save user message to DB
   if (sessionId) {
@@ -45,14 +56,16 @@ export async function POST(req: Request) {
     }
   }
 
+  // Build locale-aware system prompt
+  const systemPrompt = buildSystemPrompt(locale || "en");
+
   // Create streaming response
   const stream = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     stream: true,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+    messages: [{ role: "system", content: systemPrompt }, ...messages],
   });
 
-  // Return stream to client
   return new Response(
     new ReadableStream({
       async start(controller) {

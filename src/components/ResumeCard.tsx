@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { FileText, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,17 +16,18 @@ interface Resume {
 }
 
 export function ResumeCard({ resume }: { resume: Resume }) {
+  const t = useTranslations("resumeCard");
   const [deleting, setDeleting] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
   async function handleDelete() {
-    if (!confirm(`Delete "${resume.title}"?`)) return;
+    if (!confirm(t("deleteConfirm", { title: resume.title }))) return;
     setDeleting(true);
     const res = await fetch(`/api/resume/${resume.id}`, { method: "DELETE" });
     if (res.ok) {
       setDeleted(true);
     } else {
-      alert("Failed to delete. Try again.");
+      alert(t("deleteFailed"));
       setDeleting(false);
     }
   }
@@ -44,13 +46,13 @@ export function ResumeCard({ resume }: { resume: Resume }) {
             {resume.status === "processing" && (
               <Badge variant="secondary" className="text-xs gap-1">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Processing
+                {t("processing")}
               </Badge>
             )}
             {resume.status === "error" && (
               <Badge variant="destructive" className="text-xs gap-1">
                 <AlertCircle className="w-3 h-3" />
-                Error
+                {t("error")}
               </Badge>
             )}
           </div>
@@ -61,15 +63,13 @@ export function ResumeCard({ resume }: { resume: Resume }) {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Status: processing — show skeleton loader */}
         {resume.status === "processing" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Generating...</span>
+            <span>{t("generating")}</span>
           </div>
         )}
 
-        {/* Status: ready — show download buttons */}
         {resume.status === "ready" && (
           <>
             <Button variant="outline" size="sm" asChild>
@@ -91,14 +91,12 @@ export function ResumeCard({ resume }: { resume: Resume }) {
           </>
         )}
 
-        {/* Status: error — show retry hint */}
         {resume.status === "error" && (
           <span className="text-xs text-destructive">
-            Generation failed
+            {t("generationFailed")}
           </span>
         )}
 
-        {/* Delete button — always visible */}
         <Button
           variant="ghost"
           size="sm"

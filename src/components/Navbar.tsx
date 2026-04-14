@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,12 +25,11 @@ export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("navbar");
 
-  // Get current locale from pathname e.g. /de/chat → "de"
   const currentLocale = pathname.split("/")[1] || "de";
 
   const switchLocale = (locale: string) => {
-    // Replace locale segment in URL
     const segments = pathname.split("/");
     segments[1] = locale;
     router.push(segments.join("/"));
@@ -91,7 +91,7 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href={`/${currentLocale}/dashboard`} className="gap-2 flex">
                     <User className="w-4 h-4" />
-                    Dashboard
+                    {t("dashboard")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -100,13 +100,13 @@ export default function Navbar() {
                   className="gap-2 text-destructive focus:text-destructive"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sign out
+                  {t("signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Button asChild size="sm">
-              <Link href={`/${currentLocale}/auth/signin`}>Sign in</Link>
+              <Link href={`/${currentLocale}/auth/signin`}>{t("signIn")}</Link>
             </Button>
           )}
         </div>

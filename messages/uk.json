@@ -4,12 +4,51 @@
     "signInWithGoogle": "Увійти через Google",
     "signOut": "Вийти"
   },
-  "dashboard": {
-    "title": "Дашборд",
-    "welcome": "Ласкаво просимо"
-  },
   "home": {
     "title": "Smart CV Builder",
     "subtitle": "Створіть своє професійне резюме за допомогою ШІ"
+  },
+  "navbar": {
+    "dashboard": "Панель",
+    "signOut": "Вийти",
+    "signIn": "Увійти"
+  },
+  "chat": {
+    "title": "Асистент резюме",
+    "greeting": "Привіт! Я ваш асистент зі створення резюме. Давайте разом створимо ваше професійне резюме. Розкажіть про ваш останній досвід роботи — в якій компанії ви працювали і на якій посаді?",
+    "inputPlaceholder": "Введіть повідомлення...",
+    "typing": "Друкує...",
+    "detailsTitle": "Ваші дані",
+    "detailsSubtitle": "Усі поля необов'язкові",
+    "firstName": "Ім'я",
+    "firstNamePlaceholder": "Іван",
+    "lastName": "Прізвище",
+    "lastNamePlaceholder": "Петренко",
+    "phone": "Телефон",
+    "phonePlaceholder": "+49 123 456 789",
+    "uploadPhoto": "Завантажити фото",
+    "createResume": "Створити резюме",
+    "generating": "Створюється...",
+    "errorGeneric": "Під час створення резюме сталася помилка. Будь ласка, спробуйте ще раз.",
+    "errorNetwork": "Помилка мережі. Перевірте з'єднання та спробуйте ще раз."
+  },
+  "dashboard": {
+    "title": "Мої резюме",
+    "total": "всього",
+    "successBanner": "Ваше резюме успішно створено!",
+    "noResumes": "Ви ще не створили жодного резюме.",
+    "createFirst": "Створіть своє перше резюме",
+    "newResume": "Нове резюме",
+    "noDetails": "Даних поки немає",
+    "phone": "Телефон",
+    "address": "Адреса"
+  },
+  "resumeCard": {
+    "processing": "Обробка",
+    "error": "Помилка",
+    "generating": "Створюється...",
+    "generationFailed": "Створення не вдалося",
+    "deleteConfirm": "Видалити «{title}»?",
+    "deleteFailed": "Не вдалося видалити. Спробуйте ще раз."
   }
 }

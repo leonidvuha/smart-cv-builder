@@ -4,12 +4,51 @@
     "signInWithGoogle": "Mit Google anmelden",
     "signOut": "Abmelden"
   },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Willkommen"
-  },
   "home": {
     "title": "Smart CV Builder",
     "subtitle": "Erstellen Sie Ihren professionellen Lebenslauf mit KI"
+  },
+  "navbar": {
+    "dashboard": "Dashboard",
+    "signOut": "Abmelden",
+    "signIn": "Anmelden"
+  },
+  "chat": {
+    "title": "Lebenslauf-Assistent",
+    "greeting": "Hallo! Ich bin Ihr Lebenslauf-Assistent. Lassen Sie uns gemeinsam Ihren professionellen Lebenslauf erstellen. Erzählen Sie mir von Ihrer letzten Berufserfahrung — bei welchem Unternehmen haben Sie gearbeitet und in welcher Position?",
+    "inputPlaceholder": "Nachricht eingeben...",
+    "typing": "Schreibt...",
+    "detailsTitle": "Ihre Daten",
+    "detailsSubtitle": "Alle Felder sind optional",
+    "firstName": "Vorname",
+    "firstNamePlaceholder": "Max",
+    "lastName": "Nachname",
+    "lastNamePlaceholder": "Mustermann",
+    "phone": "Telefon",
+    "phonePlaceholder": "+49 123 456 789",
+    "uploadPhoto": "Foto hochladen",
+    "createResume": "Lebenslauf erstellen",
+    "generating": "Wird erstellt...",
+    "errorGeneric": "Beim Erstellen Ihres Lebenslaufs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "errorNetwork": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut."
+  },
+  "dashboard": {
+    "title": "Meine Lebensläufe",
+    "total": "gesamt",
+    "successBanner": "Ihr Lebenslauf wurde erfolgreich erstellt!",
+    "noResumes": "Sie haben noch keine Lebensläufe erstellt.",
+    "createFirst": "Erstellen Sie Ihren ersten Lebenslauf",
+    "newResume": "Neuer Lebenslauf",
+    "noDetails": "Noch keine Angaben",
+    "phone": "Telefon",
+    "address": "Adresse"
+  },
+  "resumeCard": {
+    "processing": "Verarbeitung",
+    "error": "Fehler",
+    "generating": "Wird erstellt...",
+    "generationFailed": "Erstellung fehlgeschlagen",
+    "deleteConfirm": "„{title}" löschen?",
+    "deleteFailed": "Löschen fehlgeschlagen. Versuchen Sie es erneut."
   }
 }

@@ -4,12 +4,51 @@
     "signInWithGoogle": "Sign in with Google",
     "signOut": "Sign out"
   },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome"
-  },
   "home": {
     "title": "Smart CV Builder",
     "subtitle": "Create your professional resume with AI"
+  },
+  "navbar": {
+    "dashboard": "Dashboard",
+    "signOut": "Sign out",
+    "signIn": "Sign in"
+  },
+  "chat": {
+    "title": "Resume Assistant",
+    "greeting": "Hi! I'm your resume assistant. Let's build your professional resume together. Tell me about your most recent work experience — what was the company and your position?",
+    "inputPlaceholder": "Type your message...",
+    "typing": "Typing...",
+    "detailsTitle": "Your Details",
+    "detailsSubtitle": "All fields are optional",
+    "firstName": "First name",
+    "firstNamePlaceholder": "John",
+    "lastName": "Last name",
+    "lastNamePlaceholder": "Doe",
+    "phone": "Phone",
+    "phonePlaceholder": "+49 123 456 789",
+    "uploadPhoto": "Upload photo",
+    "createResume": "Create Resume",
+    "generating": "Generating...",
+    "errorGeneric": "Something went wrong while generating your resume. Please try again.",
+    "errorNetwork": "Network error. Please check your connection and try again."
+  },
+  "dashboard": {
+    "title": "My Resumes",
+    "total": "total",
+    "successBanner": "Your resume was created successfully!",
+    "noResumes": "You haven't created any resumes yet.",
+    "createFirst": "Create your first resume",
+    "newResume": "New Resume",
+    "noDetails": "No details yet",
+    "phone": "Phone",
+    "address": "Address"
+  },
+  "resumeCard": {
+    "processing": "Processing",
+    "error": "Error",
+    "generating": "Generating...",
+    "generationFailed": "Generation failed",
+    "deleteConfirm": "Delete \"{title}\"?",
+    "deleteFailed": "Failed to delete. Try again."
   }
 }
