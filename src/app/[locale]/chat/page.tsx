@@ -39,6 +39,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // --- Form state ---
   const [firstName, setFirstName] = useState("");
@@ -89,6 +90,7 @@ export default function ChatPage() {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsLoading(true);
     try {
       const response = await fetch("/api/chat", {
@@ -239,15 +241,27 @@ export default function ChatPage() {
           <div ref={bottomRef} />
         </div>
         <div className="px-6 py-4 border-t border-border">
-          <div className="flex gap-2">
-            <input
-              type="text"
+          <div className="flex gap-2 items-end">
+            <textarea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Auto-resize: reset height then set to scrollHeight, capped at 4 lines
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 96) + "px";
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
               placeholder={t("inputPlaceholder")}
               disabled={isCreating}
-              className="flex-1 bg-muted text-foreground rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+              rows={1}
+              className="flex-1 bg-muted text-foreground rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 resize-none overflow-y-auto"
+              style={{ maxHeight: "96px" }}
             />
             <Button
               onClick={sendMessage}
